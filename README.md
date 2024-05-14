@@ -43,7 +43,7 @@ Functional methods are covered by unit tests.
 
 ## 2. Console App
 
-### UNFINISHED Plain JDBC Console App (Task 1)
+### Plain JDBC Console App (Task 1)
 
 The main task of Plain JDBC Console App is
 
