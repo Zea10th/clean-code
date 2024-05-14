@@ -1,5 +1,6 @@
 package av.biezbardis.mentorship.tasks.consoleapp.dao;
 
+import av.biezbardis.mentorship.tasks.consoleapp.exception.DataAccessException;
 import av.biezbardis.mentorship.tasks.consoleapp.model.Group;
 
 import java.sql.Connection;
@@ -11,121 +12,95 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
-public class GroupDao implements Dao<Group> {
-    private static final String CREATING_GROUP_FAILED = "Creating group failed, no rows affected.";
-    private static final String NO_ID_OBTAINED = "Creating group failed, no ID obtained.";
-    private static final String ADD_GROUP_SQL_QUERY = "insert into groups (group_name) values (?)";
-    private static final String UPDATE_GROUP_SQL_QUERY = "update groups set group_name = ? where group_id = ?";
-    private static final String DELETE_GROUP_SQL_QUERY = "delete from groups where group_id = ?";
-    private static final String GET_GROUP_SQL_QUERY = "select * from groups where group_id = ?";
-    private static final String GET_ALL_GROUPS_SQL_QUERY = "select * from groups";
-    private final PostgreSqlDaoFactory daoFactory;
+public class GroupDao implements GenericDao<Group> {
+    private static final String DELETE_GROUP_SQL_QUERY = "DELETE FROM groups WHERE group_id = ?;";
+    private static final String FIND_ALL_GROUPS_SQL_QUERY = "SELECT * FROM groups;";
+    private static final String FIND_GROUP_SQL_QUERY = "SELECT * FROM groups WHERE group_id = ?;";
+    private static final String INSERT_GROUP_SQL_QUERY = "INSERT INTO groups (group_name) VALUES (?);";
+    private static final String UPDATE_GROUP_SQL_QUERY = "UPDATE groups SET group_name = ? WHERE group_id = ?;";
+    private final ConnectionUtil connectionUtil;
 
-    public GroupDao(PostgreSqlDaoFactory daoFactory) {
-        this.daoFactory = daoFactory;
+    public GroupDao(ConnectionUtil connectionUtil) {
+        this.connectionUtil = connectionUtil;
     }
 
     @Override
-    public int save(Group group) {
-        int groupId = -1;
-
-        try (Connection connection = daoFactory.getConnection();
-             PreparedStatement statement = connection
-                     .prepareStatement(ADD_GROUP_SQL_QUERY, Statement.RETURN_GENERATED_KEYS)) {
+    public void save(Group group) {
+        try (Connection connection = connectionUtil.getConnection();
+             PreparedStatement statement = connection.prepareStatement(INSERT_GROUP_SQL_QUERY)) {
 
             statement.setString(1, group.getName());
-
-            int affectedRows = statement.executeUpdate();
-            if (affectedRows == 0) {
-                throw new SQLException(CREATING_GROUP_FAILED);
-            }
-
-            ResultSet generatedKeys = statement.getGeneratedKeys();
-            if (!generatedKeys.next()) {
-                throw new SQLException(NO_ID_OBTAINED);
-            }
-
-            groupId = generatedKeys.getInt(1);
-            group.setId(groupId);
+            statement.executeUpdate();
         } catch (SQLException e) {
-            e.printStackTrace();
+            throw new DataAccessException("Failed to save entity", e);
         }
-
-        return groupId;
     }
 
     @Override
-    public Optional<Group> get(int groupId) {
-        try (Connection connection = daoFactory.getConnection();
-             PreparedStatement statement = connection
-                     .prepareStatement(GET_GROUP_SQL_QUERY, Statement.RETURN_GENERATED_KEYS)) {
+    public Optional<Group> findById(Long id) {
+        try (Connection connection = connectionUtil.getConnection();
+             PreparedStatement statement = connection.prepareStatement(FIND_GROUP_SQL_QUERY)) {
 
-            statement.setInt(1, groupId);
+            statement.setLong(1, id);
 
-            ResultSet resultSet = statement.executeQuery();
-            if (resultSet.next()) {
-                return Optional.of(extractGroupFromResultSet(resultSet));
+            try (ResultSet resultSet = statement.executeQuery()) {
+                Optional<Group> optionalGroup = Optional.empty();
+                while (resultSet.next()) {
+                    Group group = new Group();
+                    group.setId(resultSet.getLong("group_id"));
+                    group.setName(resultSet.getString("group_name"));
+                    optionalGroup = Optional.of(group);
+                }
+                return optionalGroup;
             }
         } catch (SQLException e) {
-            e.printStackTrace();
+            throw new DataAccessException("Failed to find entity", e);
         }
-
-        return Optional.empty();
     }
 
     @Override
-    public List<Group> getAll() {
-        List<Group> groups = new ArrayList<>();
-
-        try (Connection connection = daoFactory.getConnection();
+    public List<Group> findAll() {
+        try (Connection connection = connectionUtil.getConnection();
              Statement statement = connection.createStatement();
-             ResultSet resultSet = statement.executeQuery(GET_ALL_GROUPS_SQL_QUERY)) {
+             ResultSet resultSet = statement.executeQuery(FIND_ALL_GROUPS_SQL_QUERY)) {
 
+            List<Group> entities = new ArrayList<>();
             while (resultSet.next()) {
-                groups.add(extractGroupFromResultSet(resultSet));
+                Group group = new Group();
+                group.setId(resultSet.getLong("group_id"));
+                group.setName(resultSet.getString("group_name"));
+                entities.add(group);
             }
+            return entities;
         } catch (SQLException e) {
-            e.printStackTrace();
+            throw new DataAccessException("Failed to find entities", e);
         }
-
-        return groups;
     }
 
     @Override
-    public boolean update(Group group) {
-        try (Connection connection = daoFactory.getConnection();
-             PreparedStatement statement = connection
-                     .prepareStatement(UPDATE_GROUP_SQL_QUERY, Statement.RETURN_GENERATED_KEYS)) {
+    public void update(Group group) {
+        try (Connection connection = connectionUtil.getConnection();
+             PreparedStatement statement = connection.prepareStatement(UPDATE_GROUP_SQL_QUERY)) {
 
             statement.setString(1, group.getName());
-            statement.setInt(2, group.getId());
+            statement.setLong(2, group.getId());
+
             statement.executeUpdate();
-            return true;
         } catch (SQLException e) {
-            e.printStackTrace();
-            return false;
+            throw new DataAccessException("Failed to update entity", e);
         }
     }
 
     @Override
-    public boolean delete(int groupId) {
-        try (Connection connection = daoFactory.getConnection();
+    public void delete(Long id) {
+        try (Connection connection = connectionUtil.getConnection();
              PreparedStatement statement = connection
-                     .prepareStatement(DELETE_GROUP_SQL_QUERY, Statement.RETURN_GENERATED_KEYS)) {
+                     .prepareStatement(DELETE_GROUP_SQL_QUERY)) {
 
-            statement.setInt(1, groupId);
+            statement.setLong(1, id);
             statement.executeUpdate();
-            return true;
         } catch (SQLException e) {
-            e.printStackTrace();
-            return false;
+            throw new DataAccessException("Failed to delete entity", e);
         }
-    }
-
-    private Group extractGroupFromResultSet(ResultSet resultSet) throws SQLException {
-        Group group = new Group();
-        group.setId(resultSet.getInt("group_id"));
-        group.setName(resultSet.getString("group_name"));
-        return group;
     }
 }

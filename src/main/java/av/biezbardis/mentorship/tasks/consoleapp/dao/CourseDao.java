@@ -1,5 +1,6 @@
 package av.biezbardis.mentorship.tasks.consoleapp.dao;
 
+import av.biezbardis.mentorship.tasks.consoleapp.exception.DataAccessException;
 import av.biezbardis.mentorship.tasks.consoleapp.model.Course;
 
 import java.sql.Connection;
@@ -11,125 +12,105 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
-public class CourseDao implements Dao<Course> {
-    private static final String CREATING_COURSE_FAILED = "Creating course failed, no rows affected.";
-    private static final String NO_ID_OBTAINED = "Creating course failed, no ID obtained.";
-    private static final String ADD_COURSE_SQL_QUERY =
-            "insert into courses (course_name, course_description) values (?, ?)";
-    private static final String UPDATE_COURSE_SQL_QUERY =
-            "update courses set course_name = ?, course_description = ? where course_id = ?";
-    private static final String DELETE_COURSE_SQL_QUERY = "delete from courses where course_id = ?";
-    private static final String GET_COURSE_SQL_QUERY = "select * from courses where course_id = ?";
-    private static final String GET_ALL_COURSES_SQL_QUERY = "select * from courses";
-    private final PostgreSqlDaoFactory daoFactory;
+public class CourseDao implements GenericDao<Course> {
+    private static final String DELETE_COURSE_SQL_QUERY = """
+            DELETE FROM course_students WHERE course_id = ?;
+            DELETE FROM courses WHERE course_id = ?;""";
+    private static final String FIND_ALL_COURSES_SQL_QUERY = "SELECT * FROM courses;";
+    private static final String FIND_COURSE_SQL_QUERY = "SELECT * FROM courses WHERE course_id = ?;";
+    private static final String INSERT_COURSE_SQL_QUERY = """
+            INSERT INTO courses (course_name, course_description)
+            VALUES (?, ?);""";
+    private static final String UPDATE_COURSE_SQL_QUERY = """
+            UPDATE courses SET course_name = ?, course_description = ?
+            WHERE course_id = ?;""";
+    private final ConnectionUtil connectionUtil;
 
-    public CourseDao(PostgreSqlDaoFactory daoFactory) {
-        this.daoFactory = daoFactory;
+    public CourseDao(ConnectionUtil connectionUtil) {
+        this.connectionUtil = connectionUtil;
     }
 
     @Override
-    public int save(Course course) {
-        int courseId = -1;
-
-        try (Connection connection = daoFactory.getConnection();
-             PreparedStatement statement = connection
-                     .prepareStatement(ADD_COURSE_SQL_QUERY, Statement.RETURN_GENERATED_KEYS)) {
+    public void save(Course course) {
+        try (Connection connection = connectionUtil.getConnection();
+             PreparedStatement statement = connection.prepareStatement(INSERT_COURSE_SQL_QUERY)) {
 
             statement.setString(1, course.getName());
             statement.setString(2, course.getDescription());
-
-            int affectedRows = statement.executeUpdate();
-            if (affectedRows == 0) {
-                throw new SQLException(CREATING_COURSE_FAILED);
-            }
-
-            ResultSet generatedKeys = statement.getGeneratedKeys();
-            if (!generatedKeys.next()) {
-                throw new SQLException(NO_ID_OBTAINED);
-            }
-
-            courseId = generatedKeys.getInt(1);
-            course.setId(courseId);
+            statement.executeUpdate();
         } catch (SQLException e) {
-            e.printStackTrace();
+            throw new DataAccessException("Failed to save entity", e);
         }
-        return courseId;
     }
 
     @Override
-    public Optional<Course> get(int courseId) {
-        try (Connection connection = daoFactory.getConnection();
-             PreparedStatement statement = connection
-                     .prepareStatement(GET_COURSE_SQL_QUERY, Statement.RETURN_GENERATED_KEYS)) {
+    public Optional<Course> findById(Long id) {
+        try (Connection connection = connectionUtil.getConnection();
+             PreparedStatement statement = connection.prepareStatement(FIND_COURSE_SQL_QUERY)) {
 
-            statement.setInt(1, courseId);
+            statement.setLong(1, id);
 
-            ResultSet resultSet = statement.executeQuery();
-            if (resultSet.next()) {
-                return Optional.of(extractCourseFromResultSet(resultSet));
+            try (ResultSet resultSet = statement.executeQuery()) {
+                Optional<Course> optionalCourse = Optional.empty();
+                while (resultSet.next()) {
+                    Course course = new Course();
+                    course.setId(resultSet.getLong("course_id"));
+                    course.setName(resultSet.getString("course_name"));
+                    course.setDescription(resultSet.getString("course_description"));
+                    optionalCourse = Optional.of(course);
+                }
+                return optionalCourse;
             }
         } catch (SQLException e) {
-            e.printStackTrace();
+            throw new DataAccessException("Failed to find entity", e);
         }
-
-        return Optional.empty();
     }
 
     @Override
-    public List<Course> getAll() {
-        List<Course> courses = new ArrayList<>();
-
-        try (Connection connection = daoFactory.getConnection();
+    public List<Course> findAll() {
+        try (Connection connection = connectionUtil.getConnection();
              Statement statement = connection.createStatement();
-             ResultSet resultSet = statement.executeQuery(GET_ALL_COURSES_SQL_QUERY)) {
+             ResultSet resultSet = statement.executeQuery(FIND_ALL_COURSES_SQL_QUERY)) {
 
+            List<Course> entities = new ArrayList<>();
             while (resultSet.next()) {
-                courses.add(extractCourseFromResultSet(resultSet));
+                Course course = new Course();
+                course.setId(resultSet.getLong("course_id"));
+                course.setName(resultSet.getString("course_name"));
+                course.setDescription(resultSet.getString("course_description"));
+                entities.add(course);
             }
+            return entities;
         } catch (SQLException e) {
-            e.printStackTrace();
+            throw new DataAccessException("Failed to find entities", e);
         }
-
-        return courses;
     }
 
     @Override
-    public boolean update(Course course) {
-        try (Connection connection = daoFactory.getConnection();
-             PreparedStatement statement = connection
-                     .prepareStatement(UPDATE_COURSE_SQL_QUERY, Statement.RETURN_GENERATED_KEYS)) {
+    public void update(Course course) {
+        try (Connection connection = connectionUtil.getConnection();
+             PreparedStatement statement = connection.prepareStatement(UPDATE_COURSE_SQL_QUERY)) {
 
             statement.setString(1, course.getName());
             statement.setString(2, course.getDescription());
-            statement.setInt(3, course.getId());
+            statement.setLong(3, course.getId());
             statement.executeUpdate();
-            return true;
         } catch (SQLException e) {
-            e.printStackTrace();
-            return false;
+            throw new DataAccessException("Failed to update entity", e);
         }
     }
 
     @Override
-    public boolean delete(int courseId) {
-        try (Connection connection = daoFactory.getConnection();
+    public void delete(Long courseId) {
+        try (Connection connection = connectionUtil.getConnection();
              PreparedStatement statement = connection
-                     .prepareStatement(DELETE_COURSE_SQL_QUERY, Statement.RETURN_GENERATED_KEYS)) {
+                     .prepareStatement(DELETE_COURSE_SQL_QUERY)) {
 
-            statement.setInt(1, courseId);
+            statement.setLong(1, courseId);
+            statement.setLong(2, courseId);
             statement.executeUpdate();
-            return true;
         } catch (SQLException e) {
-            e.printStackTrace();
-            return false;
+            throw new DataAccessException("Failed to delete entity", e);
         }
-    }
-
-    private Course extractCourseFromResultSet(ResultSet resultSet) throws SQLException {
-        Course course = new Course();
-        course.setId(resultSet.getInt("course_id"));
-        course.setName(resultSet.getString("course_name"));
-        course.setDescription(resultSet.getString("course_description"));
-        return course;
     }
 }

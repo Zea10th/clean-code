@@ -1,57 +1,45 @@
 package av.biezbardis.mentorship.tasks.consoleapp.service;
 
+import av.biezbardis.mentorship.tasks.consoleapp.dao.CourseDao;
+import av.biezbardis.mentorship.tasks.consoleapp.dao.GenericDao;
 import av.biezbardis.mentorship.tasks.consoleapp.model.Course;
-import av.biezbardis.mentorship.tasks.consoleapp.dao.Dao;
 
-import java.util.Comparator;
+import java.util.List;
 import java.util.Optional;
-import java.util.stream.Collectors;
 
-public class CourseService implements Service {
-    private static final String FAILED =
-            "Operation failed. Please check the fields being sent (course name, course description) and try again.";
-    private static final String COURSE_NOT_FOUND = "Course with this Id not found.";
+public class CourseService implements Service<Course> {
+    private final CourseDao courseDao;
 
-    private final Dao<Course> courseDao;
-
-    public CourseService(Dao<Course> courseDao) {
-        this.courseDao = courseDao;
+    public CourseService(GenericDao<Course> courseDao) {
+        this.courseDao = (CourseDao) courseDao;
     }
 
     @Override
-    public String save(String[] args) {
-        Course course = new Course(args[0], args[1]);
-        int possibleId = courseDao.save(course);
-        return (possibleId > 0) ?
-                courseDao.get(possibleId) + " was added successfully." : FAILED;
+    public void save(Course course) {
+        courseDao.save(course);
     }
 
     @Override
-    public String get(int id) {
-        Optional<Course> course = courseDao.get(id);
-        return (course.isPresent()) ? course.get().toString() : COURSE_NOT_FOUND;
+    public Course findById(long id) {
+        return courseDao.findById(id).orElseThrow();
     }
 
     @Override
-    public String getAll() {
-        return "List of courses:\n" +
-                courseDao.getAll().stream()
-                        .sorted(Comparator.comparingInt(Course::getId))
-                        .map(course -> course.getId() +
-                                " " + course.getName() +
-                                " '" + course.getDescription() + "'")
-                        .collect(Collectors.joining(System.lineSeparator()));
+    public List<Course> findAll() {
+        return courseDao.findAll();
     }
 
     @Override
-    public String update(String[] args) {
-        Course course = new Course(Integer.parseInt(args[0]), args[1], args[2]);
-        return (courseDao.update(course)) ? course + " was updated." : FAILED;
+    public void update(Course course) {
+        Optional<Course> optionalCourse = courseDao.findById(course.getId());
+        Course storedCourse = optionalCourse.orElseThrow();
+        storedCourse.setName(course.getName());
+        storedCourse.setDescription(course.getDescription());
+        courseDao.update(storedCourse);
     }
 
     @Override
-    public String delete(int id) {
-        String course = get(id);
-        return (courseDao.delete(id)) ? course + "successfully deleted." : FAILED;
+    public void delete(long id) {
+        courseDao.delete(id);
     }
 }

@@ -1,40 +1,24 @@
 package av.biezbardis.mentorship.tasks.consoleapp.model;
 
 public class Student {
-    private int id;
+    private long id;
     private String firstName;
     private String lastName;
-    private int groupId;
+    private long groupId;
 
-    public Student() {
-    }
-
-    public Student(int id, String firstName, String lastName, int groupId) {
-        this.id = id;
-        this.firstName = firstName;
-        this.lastName = lastName;
-        this.groupId = groupId;
-    }
-
-    public Student(String firstName, String lastName, int groupId) {
-        this.firstName = firstName;
-        this.lastName = lastName;
-        this.groupId = groupId;
-    }
-
-    public int getId() {
+    public long getId() {
         return id;
     }
 
-    public void setId(int id) {
+    public void setId(long id) {
         this.id = id;
     }
 
-    public int getGroupId() {
+    public long getGroupId() {
         return groupId;
     }
 
-    public void setGroupId(int groupId) {
+    public void setGroupId(long groupId) {
         this.groupId = groupId;
     }
 
@@ -56,10 +40,9 @@ public class Student {
 
     @Override
     public String toString() {
-        return "Student " +
-                firstName + " " +
+        return firstName + " " +
                 lastName + " " +
-                "Id " + id +
-                ", Group Id " + groupId;
+                "ID " + id + " " +
+                "group Id " + groupId;
     }
 }
