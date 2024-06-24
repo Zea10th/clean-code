@@ -1,4 +1,4 @@
-package av.biezbardis.mentorship.tasks.consoleapp.service;
+package av.biezbardis.mentorship.tasks.plainconsoleapp.service;
 
 import java.util.List;
 

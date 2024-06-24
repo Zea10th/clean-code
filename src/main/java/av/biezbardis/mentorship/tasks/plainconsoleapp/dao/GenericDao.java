@@ -1,6 +1,7 @@
-package av.biezbardis.mentorship.tasks.consoleapp.dao;
+package av.biezbardis.mentorship.tasks.plainconsoleapp.dao;
 
 import java.util.List;
+import java.util.Optional;
 
 /**
  * Classes that implement this interface provides key operations (CRUD) with records in the database.
@@ -26,7 +27,7 @@ public interface GenericDao<T> {
      * @param id record that is possibly stored in the database
      * @return optional of type
      */
-    T findById(Long id);
+    Optional<T> findById(Long id);
 
     /**
      * Returns all records of provided type from the database

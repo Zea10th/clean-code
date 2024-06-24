@@ -3,43 +3,43 @@ package av.biezbardis.mentorship.tasks.consoleapp.service;
 import av.biezbardis.mentorship.tasks.consoleapp.dao.CourseDao;
 import av.biezbardis.mentorship.tasks.consoleapp.dao.GenericDao;
 import av.biezbardis.mentorship.tasks.consoleapp.model.Course;
+import org.springframework.stereotype.Service;
 
 import java.util.List;
-import java.util.Optional;
 
-public class CourseService implements Service<Course> {
-    private final CourseDao courseDao;
+@Service
+public class CourseService implements GenericService<Course> {
+    private final CourseDao repository;
 
-    public CourseService(GenericDao<Course> courseDao) {
-        this.courseDao = (CourseDao) courseDao;
+    public CourseService(GenericDao<Course> repository) {
+        this.repository = (CourseDao) repository;
     }
 
     @Override
     public void save(Course course) {
-        courseDao.save(course);
+        repository.save(course);
     }
 
     @Override
     public Course findById(long id) {
-        return courseDao.findById(id).orElseThrow();
+        return repository.findById(id);
     }
 
     @Override
     public List<Course> findAll() {
-        return courseDao.findAll();
+        return repository.findAll();
     }
 
     @Override
     public void update(Course course) {
-        Optional<Course> optionalCourse = courseDao.findById(course.getId());
-        Course storedCourse = optionalCourse.orElseThrow();
+        Course storedCourse = repository.findById(course.getId());
         storedCourse.setName(course.getName());
         storedCourse.setDescription(course.getDescription());
-        courseDao.update(storedCourse);
+        repository.update(course);
     }
 
     @Override
     public void delete(long id) {
-        courseDao.delete(id);
+        repository.delete(id);
     }
 }

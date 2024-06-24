@@ -1,4 +1,4 @@
-package av.biezbardis.mentorship.tasks.consoleapp.exception;
+package av.biezbardis.mentorship.tasks.plainconsoleapp.exception;
 
 public class DataAccessException extends RuntimeException {
     public DataAccessException(String message, Throwable cause) {

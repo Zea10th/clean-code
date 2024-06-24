@@ -1,14 +1,11 @@
 package av.biezbardis.mentorship.tasks.consoleapp;
 
-import av.biezbardis.mentorship.tasks.consoleapp.dao.ConnectionUtil;
-import av.biezbardis.mentorship.tasks.consoleapp.utility.DatabaseManager;
+import org.springframework.boot.SpringApplication;
+import org.springframework.boot.autoconfigure.SpringBootApplication;
 
+@SpringBootApplication
 public class ConsoleApp {
     public static void main(String[] args) {
-        DatabaseManager adjuster = new DatabaseManager();
-        adjuster.execute();
-
-        SchoolManagementSystem system = new SchoolManagementSystem(ConnectionUtil.getInstance());
-        system.run();
+        SpringApplication.run(ConsoleApp.class, args);
     }
 }

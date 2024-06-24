@@ -1,50 +1,42 @@
-package av.biezbardis.mentorship.tasks.consoleapp;
+package av.biezbardis.mentorship.tasks.plainconsoleapp;
 
-import av.biezbardis.mentorship.tasks.consoleapp.model.Course;
-import av.biezbardis.mentorship.tasks.consoleapp.model.Group;
-import av.biezbardis.mentorship.tasks.consoleapp.model.Student;
-import av.biezbardis.mentorship.tasks.consoleapp.service.CourseService;
-import av.biezbardis.mentorship.tasks.consoleapp.service.GroupService;
-import av.biezbardis.mentorship.tasks.consoleapp.service.StudentCourseServiceImpl;
-import av.biezbardis.mentorship.tasks.consoleapp.service.StudentService;
-import org.springframework.boot.CommandLineRunner;
-import org.springframework.stereotype.Component;
+import av.biezbardis.mentorship.tasks.plainconsoleapp.dao.ConnectionUtil;
+import av.biezbardis.mentorship.tasks.plainconsoleapp.dao.CourseDao;
+import av.biezbardis.mentorship.tasks.plainconsoleapp.dao.GroupDao;
+import av.biezbardis.mentorship.tasks.plainconsoleapp.dao.StudentCourseDaoImpl;
+import av.biezbardis.mentorship.tasks.plainconsoleapp.dao.StudentDao;
+import av.biezbardis.mentorship.tasks.plainconsoleapp.model.Course;
+import av.biezbardis.mentorship.tasks.plainconsoleapp.model.Group;
+import av.biezbardis.mentorship.tasks.plainconsoleapp.model.Student;
+import av.biezbardis.mentorship.tasks.plainconsoleapp.service.CourseService;
+import av.biezbardis.mentorship.tasks.plainconsoleapp.service.GroupService;
+import av.biezbardis.mentorship.tasks.plainconsoleapp.service.StudentCourseServiceImpl;
+import av.biezbardis.mentorship.tasks.plainconsoleapp.service.StudentService;
 
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
-import java.io.UncheckedIOException;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
-@Component
-public class SchoolManagementSystem implements CommandLineRunner {
-    private static final String WELCOME_MESSAGE = "### Welcome to School Management System Console ###";
+public class SchoolManagementSystem {
     private final BufferedReader reader;
     private final CourseService courseService;
     private final GroupService groupService;
     private final StudentCourseServiceImpl studentCourseService;
     private final StudentService studentService;
 
-    public SchoolManagementSystem(CourseService courseService,
-                                  GroupService groupService,
-                                  StudentService studentService,
-                                  StudentCourseServiceImpl studentCourseService) {
-        this.courseService = courseService;
-        this.groupService = groupService;
-        this.studentService = studentService;
-        this.studentCourseService = studentCourseService;
+    public SchoolManagementSystem(ConnectionUtil connectionUtil) {
         this.reader = new BufferedReader(new InputStreamReader(System.in));
+        this.courseService = new CourseService(new CourseDao(connectionUtil));
+        this.groupService = new GroupService(new GroupDao(connectionUtil));
+        this.studentCourseService = new StudentCourseServiceImpl(new StudentCourseDaoImpl(connectionUtil));
+        this.studentService = new StudentService(new StudentDao(connectionUtil));
     }
 
-    @Override
-    public void run(String... args) {
-        System.out.println("-".repeat(WELCOME_MESSAGE.length()));
-        System.out.println(WELCOME_MESSAGE);
-        System.out.println("-".repeat(WELCOME_MESSAGE.length()));
-
+    public void run() {
         String input;
         do {
             displayMenu();
@@ -62,7 +54,7 @@ public class SchoolManagementSystem implements CommandLineRunner {
                     default -> System.out.println("Invalid choice. Please try again.");
                 }
             } catch (IOException e) {
-                throw new UncheckedIOException(e);
+                throw new RuntimeException(e);
             }
         } while (!input.equals("exit"));
     }
@@ -85,7 +77,7 @@ public class SchoolManagementSystem implements CommandLineRunner {
         try {
             maxStudents = Integer.parseInt(reader.readLine());
         } catch (IOException e) {
-            throw new NumberFormatException(e.getMessage());
+            throw new RuntimeException(e);
         }
 
         List<Group> groups = groupService.findAll();
@@ -113,7 +105,7 @@ public class SchoolManagementSystem implements CommandLineRunner {
         try {
             courseName = reader.readLine();
         } catch (IOException e) {
-            throw new UncheckedIOException(e);
+            throw new RuntimeException(e);
         }
 
         Optional<Course> optionalCourse = courseService.findAll().stream()
@@ -142,7 +134,7 @@ public class SchoolManagementSystem implements CommandLineRunner {
         try {
             studentArgs = reader.readLine().split(" ");
         } catch (IOException e) {
-            throw new UncheckedIOException(e);
+            throw new RuntimeException(e);
         }
 
         Student student = new Student();
@@ -158,7 +150,7 @@ public class SchoolManagementSystem implements CommandLineRunner {
         try {
             studentId = Long.parseLong(reader.readLine());
         } catch (IOException e) {
-            throw new NumberFormatException(e.getMessage());
+            throw new RuntimeException(e);
         }
 
         studentService.delete(studentId);
@@ -170,7 +162,7 @@ public class SchoolManagementSystem implements CommandLineRunner {
         try {
             studentId = Long.parseLong(reader.readLine());
         } catch (IOException e) {
-            throw new NumberFormatException(e.getMessage());
+            throw new RuntimeException(e);
         }
 
         List<Course> coursesByStudentId = studentCourseService.getCoursesByStudentId(studentId);
@@ -194,7 +186,7 @@ public class SchoolManagementSystem implements CommandLineRunner {
         try {
             courseId = Long.parseLong(reader.readLine());
         } catch (IOException e) {
-            throw new NumberFormatException(e.getMessage());
+            throw new RuntimeException(e);
         }
         studentCourseService.enrollStudentInCourse(studentId, courseId);
     }
@@ -205,7 +197,7 @@ public class SchoolManagementSystem implements CommandLineRunner {
         try {
             studentId = Long.parseLong(reader.readLine());
         } catch (IOException e) {
-            throw new NumberFormatException(e.getMessage());
+            throw new RuntimeException(e);
         }
 
         List<Course> coursesByStudentId = studentCourseService.getCoursesByStudentId(studentId);
@@ -224,7 +216,7 @@ public class SchoolManagementSystem implements CommandLineRunner {
         try {
             courseId = Long.parseLong(reader.readLine());
         } catch (IOException e) {
-            throw new NumberFormatException(e.getMessage());
+            throw new RuntimeException(e);
         }
         studentCourseService.unenrollStudentFromCourse(studentId, courseId);
     }

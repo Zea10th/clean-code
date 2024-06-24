@@ -1,14 +1,13 @@
-package av.biezbardis.mentorship.tasks.consoleapp.service;
+package av.biezbardis.mentorship.tasks.plainconsoleapp.service;
 
-import av.biezbardis.mentorship.tasks.consoleapp.dao.GenericDao;
-import av.biezbardis.mentorship.tasks.consoleapp.dao.StudentDao;
-import av.biezbardis.mentorship.tasks.consoleapp.model.Student;
-import org.springframework.stereotype.Service;
+import av.biezbardis.mentorship.tasks.plainconsoleapp.dao.GenericDao;
+import av.biezbardis.mentorship.tasks.plainconsoleapp.dao.StudentDao;
+import av.biezbardis.mentorship.tasks.plainconsoleapp.model.Student;
 
 import java.util.List;
+import java.util.Optional;
 
-@Service
-public class StudentService implements GenericService<Student> {
+public class StudentService implements Service<Student> {
     private final StudentDao studentDao;
 
     public StudentService(GenericDao<Student> studentDao) {
@@ -22,7 +21,7 @@ public class StudentService implements GenericService<Student> {
 
     @Override
     public Student findById(long id) {
-        return studentDao.findById(id);
+        return studentDao.findById(id).orElseThrow();
     }
 
     @Override
@@ -32,8 +31,9 @@ public class StudentService implements GenericService<Student> {
 
     @Override
     public void update(Student student) {
-        Student storedStudent = studentDao.findById(student.getId());
-        storedStudent.setFirstName(student.getFirstName());
+        Optional<Student> optionalStudent = studentDao.findById(student.getId());
+        Student storedStudent = optionalStudent.orElseThrow();
+        storedStudent.setFirstName(storedStudent.getFirstName());
         storedStudent.setLastName(student.getLastName());
         storedStudent.setGroupId(storedStudent.getGroupId());
         studentDao.update(storedStudent);

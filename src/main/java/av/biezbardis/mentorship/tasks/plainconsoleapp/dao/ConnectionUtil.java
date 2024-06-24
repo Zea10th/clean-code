@@ -1,6 +1,6 @@
-package av.biezbardis.mentorship.tasks.consoleapp.dao;
+package av.biezbardis.mentorship.tasks.plainconsoleapp.dao;
 
-import av.biezbardis.mentorship.tasks.consoleapp.exception.DataBaseCredentialsException;
+import av.biezbardis.mentorship.tasks.plainconsoleapp.exception.DataBaseCredentialsException;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -16,7 +16,7 @@ import java.util.Properties;
  */
 public final class ConnectionUtil {
     private static ConnectionUtil instance;
-    private static final String PROPERTIES_FILE = "consoleapp/application.properties";
+    private static final String PROPERTIES_FILE = "plainconsoleapp/application.properties";
     private String url;
     private String username;
     private String password;

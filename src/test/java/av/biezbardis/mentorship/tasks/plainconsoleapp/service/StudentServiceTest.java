@@ -1,7 +1,7 @@
-package av.biezbardis.mentorship.tasks.consoleapp.service;
+package av.biezbardis.mentorship.tasks.plainconsoleapp.service;
 
-import av.biezbardis.mentorship.tasks.consoleapp.dao.StudentDao;
-import av.biezbardis.mentorship.tasks.consoleapp.model.Student;
+import av.biezbardis.mentorship.tasks.plainconsoleapp.dao.StudentDao;
+import av.biezbardis.mentorship.tasks.plainconsoleapp.model.Student;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
@@ -11,21 +11,28 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.NoSuchElementException;
+import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.mockito.Mockito.*;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.mockito.ArgumentMatchers.anyLong;
+import static org.mockito.Mockito.doNothing;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
 class StudentServiceTest {
-    @Mock
-    private StudentDao repository;
     @InjectMocks
     private StudentService service;
+    @Mock
+    private StudentDao dao;
 
     @Test
     void shouldSaveEntityWhenCalledSaveWithCorrectFields() {
         ArgumentCaptor<Student> valueCapture = ArgumentCaptor.forClass(Student.class);
-        doNothing().when(repository).save(valueCapture.capture());
+        doNothing().when(dao).save(valueCapture.capture());
 
         Student student = new Student();
         student.setFirstName("John");
@@ -34,7 +41,14 @@ class StudentServiceTest {
 
         service.save(student);
 
-        verify(repository, times(1)).save(valueCapture.getValue());
+        verify(dao, times(1)).save(valueCapture.getValue());
+    }
+
+    @Test
+    void shouldThrowNoSuchElementExceptionWhenDaoReturnsOptionalIsEmptyWhileSaving() {
+        when(dao.findById(anyLong())).thenReturn(Optional.empty());
+
+        assertThrows(NoSuchElementException.class, () -> service.findById(21));
     }
 
     @Test
@@ -45,7 +59,7 @@ class StudentServiceTest {
         student.setLastName("Doe");
         student.setGroupId(1L);
 
-        when(repository.findById(21L)).thenReturn(student);
+        when(dao.findById(21L)).thenReturn(Optional.of(student));
 
         Student actual = service.findById(21L);
 
@@ -66,7 +80,7 @@ class StudentServiceTest {
             students.add(student);
         }
 
-        when(repository.findAll()).thenReturn(students);
+        when(dao.findAll()).thenReturn(students);
 
         List<Student> actual = service.findAll();
 
@@ -77,6 +91,13 @@ class StudentServiceTest {
     }
 
     @Test
+    void shouldThrowServiceExceptionWhenDaoReturnsEmptyOptionalWhileUpdating() {
+        when(dao.findById(anyLong())).thenReturn(Optional.empty());
+
+        assertThrows(NoSuchElementException.class, () -> service.update(new Student()));
+    }
+
+    @Test
     void shouldUpdateEntityWhenCalledUpdateWithCorrectArgs() {
         Student student = new Student();
         student.setId(17L);
@@ -84,20 +105,20 @@ class StudentServiceTest {
         student.setLastName("Doe");
         student.setGroupId(1L);
 
-        when(repository.findById(17L)).thenReturn(student);
-        doNothing().when(repository).update(student);
+        when(dao.findById(17L)).thenReturn(Optional.of(student));
+        doNothing().when(dao).update(student);
 
         service.update(student);
 
-        verify(repository, times(1)).update(student);
+        verify(dao, times(1)).update(student);
     }
 
     @Test
     void shouldDeleteEntityWhenCalledDeleteWithCorrectId() {
-        doNothing().when(repository).delete(13L);
+        doNothing().when(dao).delete(13L);
 
         service.delete(13L);
 
-        verify(repository, times(1)).delete(13L);
+        verify(dao, times(1)).delete(13L);
     }
 }

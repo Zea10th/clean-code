@@ -52,3 +52,8 @@ The main task of Plain JDBC Console App is
 - service has console interface and provides CRUD operations.
 
 Functional methods are covered by unit tests.
+Integration tests were performed using the PostgreSQL Docker container test environment.
+
+### Spring JDBC Console App (Task 2)
+
+Based on Console App from Task 1 convert to Spring JDBC application.

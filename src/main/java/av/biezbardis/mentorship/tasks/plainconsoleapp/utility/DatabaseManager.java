@@ -1,7 +1,7 @@
-package av.biezbardis.mentorship.tasks.consoleapp.utility;
+package av.biezbardis.mentorship.tasks.plainconsoleapp.utility;
 
-import av.biezbardis.mentorship.tasks.consoleapp.dao.ConnectionUtil;
-import av.biezbardis.mentorship.tasks.consoleapp.exception.DataAccessException;
+import av.biezbardis.mentorship.tasks.plainconsoleapp.dao.ConnectionUtil;
+import av.biezbardis.mentorship.tasks.plainconsoleapp.exception.DataAccessException;
 
 import java.io.BufferedReader;
 import java.io.InputStream;
@@ -14,9 +14,9 @@ import java.util.stream.Collectors;
 
 public class DatabaseManager {
     private static final InputStream SCHEME_SQL_QUERY_STREAM = DatabaseManager.class
-            .getClassLoader().getResourceAsStream("consoleapp/scheme.sql");
+            .getClassLoader().getResourceAsStream("plainconsoleapp/scheme.sql");
     private static final InputStream SCRIPT_SQL_QUERY_STREAM = DatabaseManager.class
-            .getClassLoader().getResourceAsStream("consoleapp/script.sql");
+            .getClassLoader().getResourceAsStream("plainconsoleapp/script.sql");
     private static final String DROP_TABLES_IF_EXISTS =
             "DROP TABLE IF EXISTS students, groups, courses, course_students;";
 

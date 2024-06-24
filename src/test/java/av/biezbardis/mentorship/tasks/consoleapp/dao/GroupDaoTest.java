@@ -1,115 +1,84 @@
 package av.biezbardis.mentorship.tasks.consoleapp.dao;
 
 import av.biezbardis.mentorship.tasks.consoleapp.model.Group;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentMatchers;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.jdbc.core.RowMapper;
+import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
 
-import java.sql.Connection;
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
-import java.sql.SQLException;
-import java.util.List;
-import java.util.Optional;
+import java.util.Map;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
 class GroupDaoTest {
+    @Mock
+    private NamedParameterJdbcTemplate jdbcTemplate;
     @InjectMocks
     private GroupDao dao;
-    @Mock
-    private ConnectionUtil daoFactory;
-
-    @Mock
-    private Connection mockConnection;
-    @Mock
-    private PreparedStatement mockStatement;
-    @Mock
-    private ResultSet mockResultSet;
-
-    @BeforeEach
-    void setUp() throws SQLException {
-        when(daoFactory.getConnection()).thenReturn(mockConnection);
-    }
 
     @Test
-    void shouldSaveWhenProvidedCorrectEntity() throws SQLException {
-        when(mockConnection.prepareStatement(anyString())).thenReturn(mockStatement);
-        when(mockStatement.executeUpdate()).thenReturn(1);
+    void shouldSaveWhenProvidedCorrectEntity() {
 
         Group group = new Group();
         group.setName("GPP");
+
         dao.save(group);
 
-        verify(mockStatement).setString(1, "GPP");
-        verify(mockStatement).executeUpdate();
+        verify(jdbcTemplate).update(
+                eq(GroupDao.INSERT_GROUP_SQL_QUERY),
+                ArgumentMatchers.<Map<String, Long>>any()
+        );
     }
 
     @Test
-    void shouldReturnNotEmptyOptionalWhenProvidedCorrectId() throws SQLException {
-        when(mockConnection.prepareStatement(anyString())).thenReturn(mockStatement);
-        when(mockStatement.executeQuery()).thenReturn(mockResultSet);
-        when(mockResultSet.next()).thenReturn(true, false);
-        when(mockResultSet.getLong("group_id")).thenReturn(15L);
-        when(mockResultSet.getString("group_name")).thenReturn("GPP");
+    void shouldReturnEntityWhenProvidedCorrectId() {
+        dao.findById(15L);
 
-        Optional<Group> actual = dao.findById(15L);
-
-        assertTrue(actual.isPresent());
-        assertEquals(15L, actual.get().getId());
-        assertEquals("GPP", actual.get().getName());
-        verify(mockStatement).setLong(1, 15L);
-        verify(mockStatement).executeQuery();
+        verify(jdbcTemplate).queryForObject(eq(GroupDao.FIND_GROUP_SQL_QUERY),
+                ArgumentMatchers.<Map<String, Long>>any(),
+                ArgumentMatchers.<RowMapper<Group>>any()
+        );
     }
 
     @Test
-    void shouldReturnListOfEntitiesWhenCallGetAllMethod() throws SQLException {
-        when(mockConnection.createStatement()).thenReturn(mockStatement);
-        when(mockStatement.executeQuery(anyString())).thenReturn(mockResultSet);
-        when(mockResultSet.next())
-                .thenReturn(true).thenReturn(true).thenReturn(true).thenReturn(false);
-        when(mockResultSet.getLong("group_id")).thenReturn(1L, 2L, 3L);
-        when(mockResultSet.getString("group_name"))
-                .thenReturn("GPP", "Nerds", "Jocks");
+    void shouldReturnListOfEntitiesWhenCallFindAllMethod() {
+        dao.findAll();
 
-        List<Group> actual = dao.findAll();
-
-        assertEquals(3, actual.size());
-        assertEquals(1L, actual.get(0).getId());
-        assertEquals("Nerds", actual.get(1).getName());
+        verify(jdbcTemplate).query(
+                eq(GroupDao.FIND_ALL_GROUPS_SQL_QUERY),
+                ArgumentMatchers.<RowMapper<Group>>any()
+        );
     }
 
     @Test
-    void shouldUpdateWhenProvidedCorrectEntity() throws SQLException {
-        when(mockConnection.prepareStatement(anyString())).thenReturn(mockStatement);
-        when(mockStatement.executeUpdate()).thenReturn(1);
-
+    void shouldUpdateWhenProvidedCorrectEntity() {
         Group group = new Group();
         group.setId(13L);
         group.setName("GPP");
+
         dao.update(group);
 
-        verify(mockStatement).setString(1, "GPP");
-        verify(mockStatement).setLong(2, 13L);
-        verify(mockStatement).executeUpdate();
+        verify(jdbcTemplate).update(
+                eq(GroupDao.UPDATE_GROUP_SQL_QUERY),
+                ArgumentMatchers.<Map<String, Long>>any()
+        );
     }
 
     @Test
-    void shouldDeleteWhenProvidedCorrectEntityId() throws SQLException {
-        when(mockConnection.prepareStatement(anyString())).thenReturn(mockStatement);
-        when(mockStatement.executeUpdate()).thenReturn(1);
+    void shouldDeleteWhenProvidedCorrectEntityId() {
+        Long groupId = 1L;
 
-        dao.delete(1L);
+        dao.delete(groupId);
 
-        verify(mockStatement).setLong(1, 1L);
-        verify(mockStatement).executeUpdate();
+        verify(jdbcTemplate).update(
+                eq(GroupDao.DELETE_GROUP_SQL_QUERY),
+                ArgumentMatchers.<Map<String, Long>>any()
+        );
     }
 }
